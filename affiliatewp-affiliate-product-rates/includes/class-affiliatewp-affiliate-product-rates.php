@@ -372,20 +372,13 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		 *
 		 * @access public
 		 * @since  1.0
+		 * @since  1.2.1 Removed Get More Addons link.
 		 *
 		 * @param array  $links The current links array.
 		 * @param string $file A specific plugin table entry.
 		 * @return array $links The modified links array
 		 */
 		public function plugin_meta( $links, $file ) {
-			if ( plugin_basename( $this->file ) === $file ) {
-					$plugins_link = array(
-							'<a title="' . __( 'Get more add-ons for AffiliateWP', 'affiliatewp-affiliate-product-rates' ) . '" href="http://affiliatewp.com/addons/" target="_blank">' . __( 'Get add-ons', 'affiliatewp-affiliate-product-rates' ) . '</a>'
-					);
-
-					$links = array_merge( $links, $plugins_link );
-			}
-
 			return $links;
 		}
 

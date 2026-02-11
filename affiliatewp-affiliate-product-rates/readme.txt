@@ -1,9 +1,9 @@
 === AffiliateWP - Affiliate Product Rates ===
-Contributors: sumobi, mordauk
-Tags: AffiliateWP, affiliate, Pippin Williamson, Andrew Munro, mordauk, pippinsplugins, sumobi, ecommerce, e-commerce, e commerce, selling, referrals, easy digital downloads, digital downloads, woocommerce, woo, products, product, rates
+Contributors: sumobi, aubreypwd
+Tags: affiliatewp, product rates, per-product, woocommerce, easy digital downloads
 Requires at least: 5.2
-Tested up to: 6.2
-Requires PHP: 5.6
+Tested up to: 6.8
+Requires PHP: 7.4
 Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -58,12 +58,12 @@ Go to Affiliates &rarr; Affiliates, and click "edit" next to the affiliate you'd
 == Changelog ==
 
 = 1.2.1 =
-* Fix: Updated Select2 library for better compatibility with affiliate groups in AffiliateWP
+* Fixed: Updated Select2 library for better compatibility with affiliate groups in AffiliateWP
 
-= 1.2 =
+= 1.2.0 =
 * New: Requires WordPress 5.2 minimum
 
-= 1.1 =
+= 1.1.0 =
 * New: Enforce minimum dependency requirements checking
 * New: Requires PHP 5.6 minimum
 * New: Requires WordPress 5.0 minimum
@@ -88,5 +88,5 @@ Go to Affiliates &rarr; Affiliates, and click "edit" next to the affiliate you'd
 = 1.0.1 =
 * Fix: Display issues on the edit affiliate page
 
-= 1.0 =
+= 1.0.0 =
 * Initial release

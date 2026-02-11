@@ -22,8 +22,6 @@
  *
  * @package Affiliate Product Rates
  * @category Core
- * @author Andrew Munro
- * @version 1.2.1
  */
 
 // Exit if accessed directly.
@@ -164,7 +162,7 @@ class AffiliateWP_APR_Requirements_Check extends AffiliateWP_Requirements_Check_
 	 * @return string Unmet requirements URL.
 	 */
 	protected function unmet_requirements_url() {
-		return 'https://docs.affiliatewp.com/article/2361-minimum-requirements-roadmaps';
+		return 'https://affiliatewp.com/docs/minimum-requirements-roadmap/';
 	}
 
 }
