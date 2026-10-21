@@ -41,7 +41,7 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		 * @since 1.0
 		 * @var string
 		 */
-		private $version = '1.2.1';
+		private $version = '';
 
 		/**
 		 * Main plugin file.
@@ -66,7 +66,8 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		public static function instance( $file = null ) {
 			if ( ! isset( self::$instance ) && ! ( self::$instance instanceof AffiliateWP_Affiliate_Product_Rates ) ) {
 				self::$instance = new AffiliateWP_Affiliate_Product_Rates;
-				self::$instance->file = $file;
+				self::$instance->file    = $file;
+				self::$instance->version = get_plugin_data( self::$instance->file, false, false )['Version'] ?? '';
 				self::$instance->setup_constants();
 				self::$instance->hooks();
 				self::$instance->includes();
@@ -88,7 +89,7 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		 */
 		public function __clone() {
 			// Cloning instances of the class is forbidden.
-			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'affiliatewp-affiliate-product-rates' ), '1.0' );
+			_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin’ huh?', 'affiliatewp-affiliate-product-rates' ), '1.0' );
 		}
 
 		/**
@@ -100,7 +101,7 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		 */
 		public function __wakeup() {
 			// Unserializing instances of the class is forbidden.
-			_doing_it_wrong( __FUNCTION__, __( 'Cheatin&#8217; huh?', 'affiliatewp-affiliate-product-rates' ), '1.0' );
+			_doing_it_wrong( __FUNCTION__, esc_html__( 'Cheatin’ huh?', 'affiliatewp-affiliate-product-rates' ), '1.0' );
 		}
 
 		/**
@@ -192,11 +193,21 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		 */
 		public function add_affiliate_rates( $affiliate_id = 0 ) {
 
-			// only add rates from admin.
-			if ( is_admin() ) {
-				$user_id = affwp_get_affiliate_user_id( $affiliate_id );
-				$this->save_product_rates( $user_id, $_POST );
+			// is_admin() is true on admin-ajax.php, so it never restricted this to administrators.
+			// Require the capability and the rate-table nonce, then pass the payload explicitly.
+			if ( ! current_user_can( 'manage_affiliates' ) ) {
+				return;
 			}
+
+			if ( ! isset( $_POST['affwp_product_rates_nonce'] )
+				|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['affwp_product_rates_nonce'] ) ), 'affwp_product_rates' )
+			) {
+				return;
+			}
+
+			$user_id = affwp_get_affiliate_user_id( $affiliate_id );
+
+			$this->save_product_rates( $user_id, wp_unslash( $_POST ) );
 
 		}
 
@@ -210,11 +221,21 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 		 */
 		public function update_affiliate( $data ) {
 
-			$user_id = isset( $data['user_id'] ) ? $data['user_id'] : '';
+			if ( ! current_user_can( 'manage_affiliates' ) ) {
+				return;
+			}
+
+			if ( ! isset( $_POST['affwp_product_rates_nonce'] )
+				|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['affwp_product_rates_nonce'] ) ), 'affwp_product_rates' )
+			) {
+				return;
+			}
+
+			$user_id = isset( $data['user_id'] ) ? absint( $data['user_id'] ) : 0;
 
 			if ( $user_id ) {
 				// save our rates.
-				$this->save_product_rates( $user_id, $_POST );
+				$this->save_product_rates( $user_id, wp_unslash( $_POST ) );
 			}
 
 		}
@@ -243,15 +264,31 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 
 					foreach ( $rates_array as $key => $rate ) {
 
-						if ( empty( $rate['products'] ) || empty( $rate['rate'] ) ) {
-							// don't save incomplete rates.
+						if ( empty( $rate['products'] ) || ! isset( $rate['rate'] ) || ! is_numeric( $rate['rate'] ) ) {
+							// don't save incomplete or non-numeric rates.
 							unset( $rates_array[$key] );
 
 						} else {
+							// Coerce products to a list of integers and clamp the rate, so a scalar
+							// products value cannot fatal the readers and a bad rate cannot exceed the sale.
+							$products = array_values( array_filter( array_map( 'absint', (array) $rate['products'] ) ) );
+
+							if ( empty( $products ) ) {
+								unset( $rates_array[$key] );
+								continue;
+							}
+
+							$type   = in_array( $rate['type'] ?? '', array( 'percentage', 'flat' ), true ) ? $rate['type'] : 'percentage';
+							$amount = max( 0, (float) $rate['rate'] );
+
+							if ( 'percentage' === $type ) {
+								$amount = min( 100, $amount );
+							}
+
 							// add to saved array.
-							$saved[ $integration_key ][ $key ]['products'] = $rate['products'];
-							$saved[ $integration_key ][ $key ]['rate']     = sanitize_text_field( $rate['rate'] );
-							$saved[ $integration_key ][ $key ]['type']     = sanitize_text_field( $rate['type'] );
+							$saved[ $integration_key ][ $key ]['products'] = $products;
+							$saved[ $integration_key ][ $key ]['rate']     = $amount;
+							$saved[ $integration_key ][ $key ]['type']     = $type;
 						}
 
 					}
@@ -302,12 +339,20 @@ if ( ! class_exists( 'AffiliateWP_Affiliate_Product_Rates' ) ) {
 
 				if ( $rates ) {
 					foreach ( $rates as $rate ) {
+						// Tolerate a legacy or poisoned row: a scalar products value would otherwise
+						// fatal in_array() on PHP 8, and a non-numeric rate would corrupt the amount.
+						$rate_products = isset( $rate['products'] ) ? (array) $rate['products'] : array();
+
+						if ( ! isset( $rate['rate'] ) || ! is_numeric( $rate['rate'] ) ) {
+							continue;
+						}
+
 						// product matches.
-						if ( in_array( $product_id, $rate['products'] ) ) {
-							if ( 'percentage' == $rate['type'] ) {
-								$referral_amount = $amount * $rate['rate'] / 100;
+						if ( in_array( (int) $product_id, array_map( 'absint', $rate_products ), true ) ) {
+							if ( 'percentage' === ( $rate['type'] ?? '' ) ) {
+								$referral_amount = $amount * (float) $rate['rate'] / 100;
 							} else {
-								$referral_amount = $rate['rate'];
+								$referral_amount = (float) $rate['rate'];
 							}
 						}
 					}

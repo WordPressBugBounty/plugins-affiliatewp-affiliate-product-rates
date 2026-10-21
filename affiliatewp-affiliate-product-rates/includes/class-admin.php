@@ -120,8 +120,11 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 
 		$enabled_integrations = affiliate_wp()->integrations->get_enabled_integrations();
 
+		// Emit the nonce the save handlers verify, so only the Edit/Add Affiliate screens can submit rates.
+		wp_nonce_field( 'affwp_product_rates', 'affwp_product_rates_nonce' );
+
 		if ( $enabled_integrations ) {
-			echo '<p class="affwp-product-rates-header"><strong>' . __( 'Product Rates', 'affiliatewp-affiliate-product-rates' ) . '</strong></p>';
+			echo '<p class="affwp-product-rates-header"><strong>' . esc_html__( 'Product Rates', 'affiliatewp-affiliate-product-rates' ) . '</strong></p>';
 		}
 
 		// add a table for each integration
@@ -131,16 +134,16 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 			if ( in_array( $integration_key, $supported_integrations ) ) { ?>
 
 			<div class="product-rates">
-				<?php echo '<h3>' . $integration . '</h3>'; ?>
+				<?php echo '<h3>' . esc_html( $integration ) . '</h3>'; ?>
 
 
 
 				<table class="form-table wp-list-table widefat fixed posts affiliatewp-rates">
 					<thead>
 						<tr>
-							<th><?php _e( 'Product/s', 'affiliatewp-affiliate-product-rates' ); ?></th>
-							<th><?php _e( 'Referral Rate', 'affiliatewp-affiliate-product-rates' ); ?></th>
-							<th><?php _e( 'Type', 'affiliatewp-affiliate-product-rates' ); ?></th>
+							<th><?php esc_html_e( 'Product/s', 'affiliatewp-affiliate-product-rates' ); ?></th>
+							<th><?php esc_html_e( 'Referral Rate', 'affiliatewp-affiliate-product-rates' ); ?></th>
+							<th><?php esc_html_e( 'Type', 'affiliatewp-affiliate-product-rates' ); ?></th>
 							<th style="width:5%;"></th>
 						</tr>
 					</thead>
@@ -167,14 +170,15 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 						?>
 
 							
-							<tr class="row-<?php echo $key; ?>">
+							<tr class="row-<?php echo esc_attr( $key ); ?>">
 								<td>
 								
-									<select id="product_rates[<?php echo $integration_key;?>][<?php echo $key; ?>]" name="product_rates[<?php echo $integration_key;?>][<?php echo $key; ?>][products][]" data-placeholder="<?php _e( 'Select Product', 'affiliatewp-affiliate-product-rates' ); ?>" multiple class="apr-select-multiple" style="width: 75%">
+									<select id="product_rates[<?php echo esc_attr( $integration_key );?>][<?php echo esc_attr( $key ); ?>]" name="product_rates[<?php echo esc_attr( $integration_key );?>][<?php echo esc_attr( $key ); ?>][products][]" data-placeholder="<?php esc_attr_e( 'Select Product', 'affiliatewp-affiliate-product-rates' ); ?>" multiple class="apr-select-multiple" style="width: 75%">
 										<?php if ( $products ) : 
 
 										foreach ( $products as $product ) { 
-										$selected = in_array( $product->ID, $rates_array['products'] ) ? $product->ID : '';
+										$rate_products = isset( $rates_array['products'] ) ? (array) $rates_array['products'] : array();
+									$selected = in_array( (int) $product->ID, array_map( 'absint', $rate_products ), true ) ? $product->ID : '';
 										?>
 										<option value="<?php echo absint( $product->ID ); ?>" <?php echo selected( $selected, $product->ID, false ); ?>><?php echo esc_html( get_the_title( $product->ID ) ); ?></option>
 
@@ -182,7 +186,7 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 
 										<?php else : ?>
 
-											<option><?php _e( 'No Products found', 'affiliatewp-affiliate-product-rates' ); ?></option>
+											<option><?php esc_html_e( 'No Products found', 'affiliatewp-affiliate-product-rates' ); ?></option>
 
 										<?php endif; ?>
 
@@ -190,16 +194,16 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 									
 								</td>
 								<td>
-									<input class="test" name="product_rates[<?php echo $integration_key;?>][<?php echo $key; ?>][rate]" type="text" value="<?php echo esc_attr( $rate ); ?>"/>
+									<input class="test" name="product_rates[<?php echo esc_attr( $integration_key );?>][<?php echo esc_attr( $key ); ?>][rate]" type="text" value="<?php echo esc_attr( $rate ); ?>"/>
 								</td>
 								<td>
-									<select class="test" name="product_rates[<?php echo $integration_key;?>][<?php echo $key; ?>][type]">
-										<option value="percentage"<?php selected( 'percentage', $type ); ?>><?php _e( 'Percentage (%)', 'affiliatewp-affiliate-product-rates' ); ?></option>
-										<option value="flat"<?php selected( 'flat', $type ); ?>><?php printf( __( 'Flat %s', 'affiliatewp-affiliate-product-rates' ), affwp_get_currency() ); ?></option>
+									<select class="test" name="product_rates[<?php echo esc_attr( $integration_key );?>][<?php echo esc_attr( $key ); ?>][type]">
+										<option value="percentage"<?php selected( 'percentage', $type ); ?>><?php esc_html_e( 'Percentage (%)', 'affiliatewp-affiliate-product-rates' ); ?></option>
+										<option value="flat"<?php selected( 'flat', $type ); ?>><?php printf( /* translators: %s: the store's currency code. */ esc_html__( 'Flat %s', 'affiliatewp-affiliate-product-rates' ), esc_html( affwp_get_currency() ) ); ?></option>
 									</select>
 								</td>
 								<td>
-									<a href="#" class="affwp_remove_rate" style="background: url(<?php echo admin_url('/images/xit.gif'); ?>) no-repeat;">&times;</a>
+									<a href="#" class="affwp_remove_rate" style="background: url(<?php echo esc_url( admin_url( '/images/xit.gif' ) ); ?>) no-repeat;">&times;</a>
 								</td>
 								
 							</tr>
@@ -207,12 +211,12 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 							<?php endforeach; ?>
 						<?php else : ?>
 							<tr>
-								<td colspan="3"><?php _e( 'No product rates created yet', 'affiliatewp-affiliate-product-rates' ); ?></td>
+								<td colspan="3"><?php esc_html_e( 'No product rates created yet', 'affiliatewp-affiliate-product-rates' ); ?></td>
 							</tr>
 						<?php endif; ?>
 						<tr>
 							<td>
-							<select id="product_rates[<?php echo $integration_key;?>][<?php echo $count; ?>]" name="product_rates[<?php echo $integration_key;?>][<?php echo $count; ?>][products][]" data-placeholder="<?php _e( 'Select Product', '' ); ?>" multiple="multiple" class="apr-select-multiple" style="width: 75%">
+							<select id="product_rates[<?php echo esc_attr( $integration_key );?>][<?php echo esc_attr( $count ); ?>]" name="product_rates[<?php echo esc_attr( $integration_key );?>][<?php echo esc_attr( $count ); ?>][products][]" data-placeholder="<?php esc_attr_e( 'Select Product', 'affiliatewp-affiliate-product-rates' ); ?>" multiple="multiple" class="apr-select-multiple" style="width: 75%">
 										<?php 
 
 										$products = affiliatewp_affiliate_product_rates()->get_products( $integration_key );
@@ -227,30 +231,30 @@ class AffiliateWP_Affiliate_Product_Rates_Admin {
 
 										<?php else : ?>
 
-											<option><?php _e( 'No Products found', 'affiliatewp-affiliate-product-rates' ); ?></option>
+											<option><?php esc_html_e( 'No Products found', 'affiliatewp-affiliate-product-rates' ); ?></option>
 
 										<?php endif; ?>
 
 									</select>
 							</td>
 							<td>
-								<input name="product_rates[<?php echo $integration_key; ?>][<?php echo $count; ?>][rate]" type="text" value="" class="test" />
+								<input name="product_rates[<?php echo esc_attr( $integration_key ); ?>][<?php echo esc_attr( $count ); ?>][rate]" type="text" value="" class="test" />
 							</td>
 							<td>
-								<select name="product_rates[<?php echo $integration_key; ?>][<?php echo $count; ?>][type]" class="test">
-									<option value="percentage"><?php _e( 'Percentage (%)', 'affiliatewp-affiliate-product-rates' ); ?></option>
-									<option value="flat"><?php printf( __( 'Flat %s', 'affiliatewp-affiliate-product-rates' ), affwp_get_currency() ); ?></option>
+								<select name="product_rates[<?php echo esc_attr( $integration_key ); ?>][<?php echo esc_attr( $count ); ?>][type]" class="test">
+									<option value="percentage"><?php esc_html_e( 'Percentage (%)', 'affiliatewp-affiliate-product-rates' ); ?></option>
+									<option value="flat"><?php printf( /* translators: %s: the store's currency code. */ esc_html__( 'Flat %s', 'affiliatewp-affiliate-product-rates' ), esc_html( affwp_get_currency() ) ); ?></option>
 								</select>
 							</td>
 							<td>
-								<a href="#" class="affwp_remove_rate" style="background: url(<?php echo admin_url('/images/xit.gif'); ?>) no-repeat;">&times;</a>
+								<a href="#" class="affwp_remove_rate" style="background: url(<?php echo esc_url( admin_url( '/images/xit.gif' ) ); ?>) no-repeat;">&times;</a>
 							</td>
 						</tr>
 					</tbody>
 					<tfoot>
 						<tr>
 							<th colspan="1">
-								<button id="affwp_new_rate<?php echo '_' . $integration_key; ?>" name="affwp_new_rate" class="button affwp_new_rate"><?php _e( 'Add New Product Rate', 'affiliatewp-affiliate-product-rates' ); ?></button>
+								<button id="affwp_new_rate<?php echo esc_attr( '_' . $integration_key ); ?>" name="affwp_new_rate" class="button affwp_new_rate"><?php esc_html_e( 'Add New Product Rate', 'affiliatewp-affiliate-product-rates' ); ?></button>
 							</th>
 							<th colspan="3">
 								

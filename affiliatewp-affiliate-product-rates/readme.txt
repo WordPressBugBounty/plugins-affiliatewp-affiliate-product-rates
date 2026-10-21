@@ -2,9 +2,9 @@
 Contributors: sumobi, aubreypwd
 Tags: affiliatewp, product rates, per-product, woocommerce, easy digital downloads
 Requires at least: 5.2
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ Go to Affiliates &rarr; Affiliates, and click "edit" next to the affiliate you'd
 1. The product rates UI. Shown with 2 integrations active, Easy Digital Downloads and WooCommerce. The same UI is also available when adding an affiliate.
 
 == Changelog ==
+
+= 1.2.2 =
+* Changed: Strengthened security across plugin, including request validation and access checks.
 
 = 1.2.1 =
 * Fixed: Updated Select2 library for better compatibility with affiliate groups in AffiliateWP
