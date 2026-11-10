@@ -58,7 +58,7 @@ Go to Affiliates &rarr; Affiliates, and click "edit" next to the affiliate you'd
 == Changelog ==
 
 = 1.2.2 =
-* Changed: Strengthened security across plugin, including request validation and access checks.
+* Changed: Strengthened security across the plugin
 
 = 1.2.1 =
 * Fixed: Updated Select2 library for better compatibility with affiliate groups in AffiliateWP
